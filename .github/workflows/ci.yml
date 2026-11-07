@@ -19,7 +19,7 @@ env:
 
 jobs:
   checks:
-    name: Lint, testes e docs
+    name: Lint e testes
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -49,5 +49,33 @@ jobs:
       - name: Testes com cobertura
         run: poetry run pytest
 
-      - name: Build da documentação
-        run: poetry run mkdocs build --strict
+  deploy-docs:
+    name: Deploy da documentação
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Instalar Poetry
+        run: pipx install "poetry==$POETRY_VERSION"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+          cache: poetry
+
+      - name: Instalar dependências
+        run: poetry install --no-interaction
+
+      - name: Configurar autor dos commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # --strict mantém a validação: a publicação falha se a documentação tiver avisos.
+      - name: Publicar no GitHub Pages
+        run: poetry run mkdocs gh-deploy --force --strict
