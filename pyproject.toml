@@ -1,0 +1,63 @@
+[project]
+name = "f1"
+version = "0.1.0"
+description = "Coleta dados históricos da API OpenF1 em Parquet, consultáveis no DuckDB."
+authors = [
+    {name = "Daniel S Medeiros",email = "medsam@uol.com.br"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "httpx (>=0.28.1,<0.29.0)",
+    "polars (>=2.1.0,<3.0.0)",
+    "duckdb (>=2.0.0,<3.0.0)",
+    "python-dotenv (>=1.2.4,<2.0.0)",
+    "streamlit (>=1.67.0,<2.0.0)",
+    "altair (>=6.3.0,<7.0.0)",
+    "pyarrow (>=26.0.1,<27.0.0)"
+]
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.17.4,<0.18.0)",
+    "pytest (>=9.2.0,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "pre-commit (>=4.7.0,<5.0.0)",
+    "taskipy (>=1.14.1,<2.0.0)"
+]
+docs = [
+    "mkdocs-material (>=9.8.0,<10.0.0)",
+    "mkdocstrings[python] (>=1.0.8,<2.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "f1", from = "src"}]
+
+[tool.poetry.scripts]
+f1-ingest = "f1.pipelines.ingest:main"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["f1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src/f1 --cov-report=term-missing --cov-fail-under=50"
+
+[tool.taskipy.tasks]
+test = "pytest"
+lint = "ruff check . && ruff format --check ."
+format = "ruff check . --fix --exit-zero && ruff format ."
+docs = "mkdocs build --strict"
+dashboard = "streamlit run src/f1/dashboard.py"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

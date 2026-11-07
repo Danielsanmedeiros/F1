@@ -1,0 +1,38 @@
+site_name: F1
+site_description: Coleta dados históricos da API OpenF1 em Parquet, consultáveis no DuckDB.
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Mudar para o tema escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Mudar para o tema claro
+  features:
+    - content.code.copy
+    - navigation.top
+    - search.highlight
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+nav:
+  - Início: index.md
+  - Arquitetura: arquitetura.md
+  - Dados: dados.md
+  - Referência da API: api.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
