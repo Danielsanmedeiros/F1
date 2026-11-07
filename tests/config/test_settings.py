@@ -13,6 +13,7 @@ def test_settings_usam_valores_padrao() -> None:
     assert settings.data_dir == Path("data")
     assert settings.db_path == Path("data") / "f1.duckdb"
     assert settings.log_level == "INFO"
+    assert settings.data_snapshot_url is None
 
 
 def test_settings_leem_variaveis() -> None:
@@ -22,6 +23,7 @@ def test_settings_leem_variaveis() -> None:
             "OPENF1_REQUEST_INTERVAL_SECONDS": "0.5",
             "F1_DATA_DIR": "outro",
             "LOG_LEVEL": "debug",
+            "F1_DATA_SNAPSHOT_URL": "http://local/f1-data.zip",
         }
     )
 
@@ -29,6 +31,11 @@ def test_settings_leem_variaveis() -> None:
     assert settings.request_interval_seconds == 0.5
     assert settings.data_dir == Path("outro")
     assert settings.log_level == "DEBUG"
+    assert settings.data_snapshot_url == "http://local/f1-data.zip"
+
+
+def test_settings_tratam_snapshot_vazio_como_ausente() -> None:
+    assert settings_from_env({"F1_DATA_SNAPSHOT_URL": ""}).data_snapshot_url is None
 
 
 @pytest.mark.parametrize("value", ["abc", "-1"])

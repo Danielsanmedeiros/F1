@@ -35,6 +35,7 @@ packages = [{include = "f1", from = "src"}]
 
 [tool.poetry.scripts]
 f1-ingest = "f1.pipelines.ingest:main"
+f1-snapshot = "f1.pipelines.snapshot:main"
 
 [tool.ruff]
 target-version = "py313"

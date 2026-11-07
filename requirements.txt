@@ -1,0 +1,3 @@
+# Usado apenas pelo Streamlit Community Cloud, para instalar o pacote f1.
+# As dependências são definidas no pyproject.toml; adicione-as com `poetry add`.
+.

@@ -2,17 +2,20 @@
 
 import html
 import os
+import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
 import altair as alt
 import duckdb
+import httpx
 import polars as pl
 import streamlit as st
 from dotenv import load_dotenv
 
 from f1.config.settings import settings_from_env
 from f1.extract import warehouse
+from f1.pipelines.snapshot import ensure_data
 from f1.transform.normalize import select_finished_sessions
 from f1.transform.race_views import (
     COMPOUND_COLORS,
@@ -37,11 +40,24 @@ POSITION_ROW_HEIGHT = 32
 PACE_CHART_HEIGHT = 300 + CHART_CHROME_HEIGHT
 # Distância mínima entre os rótulos das linhas, como fração da escala de tempos.
 LABEL_GAP_SHARE = 0.06
+ATTRIBUTION = (
+    "Dados da [OpenF1](https://openf1.org), projeto sob licença "
+    "[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). "
+    "Projeto não oficial e sem fins comerciais, sem vínculo com as empresas da "
+    "Fórmula 1. F1, FORMULA 1 e marcas relacionadas pertencem à Formula One "
+    "Licensing B.V."
+)
 
 
 @st.cache_data(ttl=600, show_spinner=False)
 def _load(db_path: str, table: str, **filters: int) -> pl.DataFrame:
     return warehouse.read_table(Path(db_path), table, **filters)
+
+
+@st.cache_resource(show_spinner="Baixando os dados...")
+def _prepare_data(url: str, data_dir: str, db_path: str) -> None:
+    """Baixa os dados uma única vez, mesmo com várias sessões abertas ao mesmo tempo."""
+    ensure_data(url, Path(data_dir), Path(db_path))
 
 
 def _default_index(options: list[int], preferred: int | None) -> int:
@@ -433,7 +449,17 @@ def main() -> None:
     """Monta a página do dashboard."""
     st.set_page_config(page_title="F1", page_icon="🏁", layout="wide")
     load_dotenv()
-    db_path = settings_from_env(os.environ).db_path
+    settings = settings_from_env(os.environ)
+    db_path = settings.db_path
+    if settings.data_snapshot_url:
+        try:
+            _prepare_data(
+                settings.data_snapshot_url, str(settings.data_dir), str(db_path)
+            )
+        except (httpx.HTTPError, zipfile.BadZipFile, duckdb.Error, OSError) as exc:
+            st.error(f"Não foi possível baixar os dados: {exc}")
+            return
+
     if not db_path.exists():
         st.error("O banco de dados ainda não existe. Carregue os dados com:")
         st.code("poetry run f1-ingest --year 2024", language="bash")
@@ -450,6 +476,8 @@ def main() -> None:
         _render_session(str(db_path), session, filters[3])
     except duckdb.Error as exc:
         st.error(f"Não foi possível ler os dados: {exc}")
+    else:
+        st.caption(ATTRIBUTION)
 
 
 if __name__ == "__main__":
