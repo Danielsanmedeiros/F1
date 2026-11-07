@@ -36,6 +36,7 @@ As variáveis são lidas do ambiente ou de um arquivo `.env` (veja `.env.example
 | `OPENF1_REQUEST_INTERVAL_SECONDS` | `2.0` | Intervalo mínimo entre chamadas, em segundos |
 | `F1_DATA_DIR` | `data` | Pasta dos arquivos Parquet e do banco DuckDB |
 | `LOG_LEVEL` | `INFO` | Nível de log |
+| `F1_DATA_SNAPSHOT_URL` | sem valor | Endereço do snapshot que o dashboard baixa quando o banco não existe |
 
 ## Dashboard
 
@@ -56,6 +57,8 @@ Rode a partir da raiz do projeto, depois de carregar ao menos uma temporada. O d
 - Pilotos sem foto na API aparecem com a sigla sobre a cor da equipe. Em 2024, isso vale para 16 dos 35 números de piloto, como Colapinto e Lawson.
 
 **Cores:** as cores das equipes são as informadas pela API e só têm contraste suficiente no fundo escuro, então o tema escuro é o padrão (`.streamlit/config.toml`). Algumas são parecidas, como as de RB e Williams. Por isso, os gráficos também identificam os pilotos com rótulo ou foto, tracejado para o segundo piloto da equipe e tabela de dados.
+
+**Dados online:** os dados não ficam no repositório. Em um ambiente sem dados, defina `F1_DATA_SNAPSHOT_URL` com o endereço de um snapshot, gerado com `poetry run f1-snapshot` em `dist/f1-data.zip`. Na primeira execução, o dashboard baixa o arquivo e cria as views. Para atualizar os dados publicados, gere e publique o snapshot de novo e reinicie o app.
 
 ## Como consultar
 

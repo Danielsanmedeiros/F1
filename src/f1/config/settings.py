@@ -19,12 +19,15 @@ class Settings:
         request_interval_seconds: Intervalo mínimo entre chamadas à API.
         data_dir: Pasta dos arquivos Parquet e do banco DuckDB.
         log_level: Nível de log.
+        data_snapshot_url: Endereço do snapshot baixado pelo dashboard quando o banco
+            não existe, ou `None` para não baixar nada.
     """
 
     base_url: str
     request_interval_seconds: float
     data_dir: Path
     log_level: str
+    data_snapshot_url: str | None = None
 
     @property
     def db_path(self) -> Path:
@@ -61,4 +64,5 @@ def settings_from_env(env: Mapping[str, str]) -> Settings:
         request_interval_seconds=interval,
         data_dir=Path(env.get("F1_DATA_DIR", DEFAULT_DATA_DIR)),
         log_level=env.get("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper(),
+        data_snapshot_url=env.get("F1_DATA_SNAPSHOT_URL") or None,
     )

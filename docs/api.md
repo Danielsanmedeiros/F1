@@ -16,6 +16,12 @@
 
 ::: f1.pipelines.ingest
 
+::: f1.extract.snapshot
+
+::: f1.load.snapshot
+
+::: f1.pipelines.snapshot
+
 ::: f1.extract.warehouse
 
 ::: f1.transform.race_views

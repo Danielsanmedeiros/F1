@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import patch
 
 import duckdb
+import httpx
 import polars as pl
 import pytest
 import streamlit as st
@@ -108,9 +109,12 @@ def isolated_data_dir(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[Path]:
     monkeypatch.setenv("F1_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("F1_DATA_SNAPSHOT_URL", "")
     st.cache_data.clear()
+    st.cache_resource.clear()
     yield tmp_path
     st.cache_data.clear()
+    st.cache_resource.clear()
 
 
 def run_app(data: dict[str, pl.DataFrame], data_dir: Path) -> AppTest:
@@ -129,6 +133,47 @@ def test_dashboard_sem_banco_orienta_a_carga() -> None:
     assert not app.exception
     assert "ainda não existe" in app.error[0].value
     assert "f1-ingest" in app.code[0].value
+
+
+def test_dashboard_baixa_snapshot_uma_vez_e_mostra_a_atribuicao(
+    isolated_data_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("F1_DATA_SNAPSHOT_URL", "https://example.test/f1-data.zip")
+    data = tables([session_row(10, "Race", "Race")])
+
+    def fake_ensure(_: str, __: Path, db_path: Path) -> None:
+        db_path.touch()
+
+    def fake_read(_: Path, table: str, **__: int) -> pl.DataFrame:
+        return data[table]
+
+    with (
+        patch(
+            "f1.pipelines.snapshot.ensure_data", side_effect=fake_ensure
+        ) as ensure_data,
+        patch("f1.extract.warehouse.read_table", side_effect=fake_read),
+    ):
+        app = AppTest.from_file(SCRIPT, default_timeout=60).run()
+        app.run()
+
+    assert not app.exception
+    ensure_data.assert_called_once()
+    assert any("OpenF1" in caption.value for caption in app.caption)
+
+
+def test_dashboard_avisa_quando_o_download_falha(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("F1_DATA_SNAPSHOT_URL", "https://example.test/f1-data.zip")
+
+    with patch(
+        "f1.pipelines.snapshot.ensure_data",
+        side_effect=httpx.ConnectError("sem conexão"),
+    ):
+        app = AppTest.from_file(SCRIPT, default_timeout=60).run()
+
+    assert not app.exception
+    assert "Não foi possível baixar os dados" in app.error[0].value
 
 
 def test_dashboard_mostra_corrida_por_padrao(isolated_data_dir: Path) -> None:
