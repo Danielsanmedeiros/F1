@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  POETRY_VERSION: "2.5.1"
+  POETRY_VIRTUALENVS_IN_PROJECT: "true"
+
+jobs:
+  checks:
+    name: Lint, testes e docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # O cache "poetry" do setup-python exige o Poetry já instalado.
+      - name: Instalar Poetry
+        run: pipx install "poetry==$POETRY_VERSION"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+          cache: poetry
+
+      - name: Validar poetry.lock
+        run: poetry check --lock
+
+      - name: Instalar dependências
+        run: poetry install --no-interaction
+
+      - name: Ruff check
+        run: poetry run ruff check .
+
+      - name: Ruff format
+        run: poetry run ruff format --check .
+
+      - name: Testes com cobertura
+        run: poetry run pytest
+
+      - name: Build da documentação
+        run: poetry run mkdocs build --strict
